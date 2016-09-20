@@ -170,9 +170,7 @@
 
 
     left.press = function () {
-        if (right.isDown) {
-            playerBox.vx = 0;
-        } else if (down.isDown || up.isDown) {
+        if (down.isDown || up.isDown) {
             playerBox.vx = -velocity * 0.70710678118;
             if (down.isDown && up.isDown){
                 playerBox.vy = 0;
@@ -203,9 +201,7 @@
     }
   
     right.press = function () {
-        if (left.isDown) {
-            playerBox.vx = 0;
-        } else if (down.isDown || up.isDown) {
+        if (down.isDown || up.isDown) {
             playerBox.vx = velocity * 0.70710678118;
             if (down.isDown && up.isDown){
                 playerBox.vy = 0;
@@ -235,10 +231,8 @@
         }
     }
 
-    down.press = function () {
-        if (up.isDown) {
-            playerBox.vy = 0;
-        } else if (left.isDown || right.isDown) {
+    down.press = function () { 
+        if (left.isDown || right.isDown) {
             playerBox.vy = velocity * 0.70710678118;
             if (left.isDown && right.isDown){
                 playerBox.vx = 0;
@@ -269,9 +263,7 @@
     }
 
     up.press = function () {
-        if (down.isDown) {
-            playerBox.vy = 0;
-        } else if (left.isDown || right.isDown) {
+        if (left.isDown || right.isDown) {
             playerBox.vy = -velocity * 0.70710678118;
             if (left.isDown && right.isDown){
                 playerBox.vx = 0;
