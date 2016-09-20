@@ -1,6 +1,7 @@
 "use strict";
 
-function guid() {
+//this should leave index.js
+function guid() { 
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000)
             .toString(16)
@@ -10,6 +11,7 @@ function guid() {
         s4() + '-' + s4() + s4() + s4();
 }
 
+//this should move to a game board class file
 class Player {
     constructor(userId, x, y, color, stage) {
         this.userId = userId;
@@ -73,7 +75,6 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
         socket.emit("player location update", playerPosition);
     }
 }
-
 
 (function () {
 

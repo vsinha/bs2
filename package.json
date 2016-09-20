@@ -10,10 +10,13 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.14.0",
-    "socket.io": "^1.4.8"
+    "socket.io": "^1.4.8",
+    "jsonfile": "~2.4.0",
+    "mathjs": "~3.5.2",
+    "nanotimer": "~0.3.14"
   },
-  "repository": { 
-    "type" : "git", 
-    "url" : "https://github.com/vsinha/bs2"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vsinha/bs2"
   }
 }
