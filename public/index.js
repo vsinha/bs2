@@ -59,20 +59,20 @@ class Player {
 }
 
 function broadcastUpdates(socket, selfPlayer) { // over the websocket
-        let playerPosition = {
-            userId: selfPlayer.userId,
-            x: selfPlayer.x,
-            y: selfPlayer.y
-        }
-        if ((playerPosition.x != null && playerPosition.y != null)
-            && (selfPlayer.lastBroadcastedPosition.x !== playerPosition.x 
-                || selfPlayer.lastBroadcastedPosition.y !== playerPosition.y)) {
-            console.log(selfPlayer.x + " " + selfPlayer.y);
-
-            selfPlayer.lastBroadcastedPosition = playerPosition;
-            socket.emit("player location update", playerPosition);
-        }
+    let playerPosition = {
+        userId: selfPlayer.userId,
+        x: selfPlayer.x,
+        y: selfPlayer.y
     }
+    if ((playerPosition.x != null && playerPosition.y != null)
+        && (selfPlayer.lastBroadcastedPosition.x !== playerPosition.x
+            || selfPlayer.lastBroadcastedPosition.y !== playerPosition.y)) {
+        console.log(selfPlayer.x + " " + selfPlayer.y);
+
+        selfPlayer.lastBroadcastedPosition = playerPosition;
+        socket.emit("player location update", playerPosition);
+    }
+}
 
 
 (function () {
@@ -84,7 +84,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     var stageHeight = 400;
     var stageWidth = 720;
     let velocity = 5;
-    
+
     console.log("my userId is: " + userId);
 
     // Autodetect, create and append the renderer to the body element
@@ -105,7 +105,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
         // let selfPlayer = new Player(userId, randomX, randomY, 0x1122ff);
         let selfPlayer = new Player(userId, 20, 20, 0x3498db, stage);
         selfPlayer.isSelfPlayer = true; // in case we forget
-        
+
         return selfPlayer;
     }
     let selfPlayer = createSelfPlayer(userId);
@@ -114,7 +114,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
         let newPlayer = new Player(update.userId, update.x, update.y, update.color, stage);
         return newPlayer;
     }
-    
+
     socket.on("player location update", function (update) {
         if (update.userId == selfPlayer.userId) {
             // this is us, ignore
@@ -133,7 +133,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
         players[update.userId].y = update.y;
     })
 
-    
+
     function animate() {
 
         selfPlayer.update();
@@ -155,6 +155,10 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     animate();
 
 
+    function emitEvent(event) {
+        socket.emit("player event update", event);
+    }
+
     ////////////////////
     // keyboard controls
     ////////////////////
@@ -165,8 +169,15 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     var down = keyboard(40);
 
     left.press = function () {
+        emitEvent({
+            userId: selfPlayer.userId,
+            pressing: {
+                left: true
+            }
+        })
+
         if (down.isDown || up.isDown) {
-            selfPlayer.dx = -velocity * 0.70710678118;         
+            selfPlayer.dx = -velocity * 0.70710678118;
             if (down.isDown && up.isDown) {
                 selfPlayer.dy = 0;
             } else if (down.isDown) {
@@ -175,11 +186,19 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
                 selfPlayer.dy = -velocity * 0.70710678118;
             }
         } else {
-            selfPlayer.dx = -velocity;                         
+            selfPlayer.dx = -velocity;
         }
     }
 
     left.release = function () {
+
+        emitEvent({
+            userId: selfPlayer.userId,
+            pressing: {
+                left: false
+            }
+        })
+
         if (right.isDown) {
             selfPlayer.dx = velocity;
         } else {
@@ -196,6 +215,14 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     }
 
     right.press = function () {
+
+        emitEvent({
+            userId: selfPlayer.userId,
+            pressing: {
+                right: true
+            }
+        })
+
         if (down.isDown || up.isDown) {
             selfPlayer.dx = velocity * 0.70710678118;
             if (down.isDown && up.isDown) {
@@ -211,6 +238,14 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     }
 
     right.release = function () {
+
+        emitEvent({
+            userId: selfPlayer.userId,
+            pressing: {
+                right: false
+            }
+        })
+
         if (left.isDown) {
             selfPlayer.dx = -velocity;
         } else {
@@ -227,6 +262,14 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     }
 
     down.press = function () {
+
+        emitEvent({
+            userId: selfPlayer.userId,
+            pressing: {
+                down: true
+            }
+        });
+
         if (left.isDown || right.isDown) {
             selfPlayer.dy = velocity * 0.70710678118;
             if (left.isDown && right.isDown) {
@@ -242,6 +285,14 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     }
 
     down.release = function () {
+
+        emitEvent({
+            userId: selfPlayer.userId,
+            pressing: {
+                down: false
+            }
+        });
+
         if (up.isDown) {
             selfPlayer.dy = -velocity;
         } else {
@@ -258,6 +309,14 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     }
 
     up.press = function () {
+
+        emitEvent({
+            userId: selfPlayer.userId,
+            pressing: {
+                up: true
+            }
+        });
+
         if (left.isDown || right.isDown) {
             selfPlayer.dy = -velocity * 0.70710678118;
             if (left.isDown && right.isDown) {
@@ -273,6 +332,14 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     }
 
     up.release = function () {
+
+        emitEvent({
+            userId: selfPlayer.userId,
+            pressing: {
+                up: false
+            }
+        });
+
         if (down.isDown) {
             selfPlayer.dy = velocity;
         } else {
