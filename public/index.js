@@ -1,4 +1,4 @@
-(function () {
+    (function () {
 
     var socket = io();
 
@@ -87,7 +87,24 @@
     }
 
     goalBoxSpawn();
-    animate();
+
+    socket.on("player location update", function(update) {
+        console.log(update);
+        playerBox.x = update.x;
+        playerBox.y = update.y;
+    })
+
+    let lastPosition = {}; // initialize to empty
+    function broadcastUpdates() { // over the websocket
+        let playerPosition = {
+            x: playerBox.x,
+            y: playerBox.y
+        }
+        if (lastPosition.x !== playerPosition.x || lastPosition.y !== playerPosition.y) {
+            lastPosition = playerPosition;
+            socket.emit("player location update", playerPosition);
+        }
+    }
 
     function animate() {
         updatePlayerLocation();
@@ -95,11 +112,15 @@
         //Render the stage
         renderer.render(stage);
 
+        broadcastUpdates();
+        
         // Check if your player collides with the target
         checkPosition();
 
         requestAnimationFrame(animate);
     }
+    animate();
+
 
     function updatePlayerLocation() {
         playerBox.x += playerBox.vx;
