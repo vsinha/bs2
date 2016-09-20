@@ -1,10 +1,10 @@
 "use strict";
 
-let Express = require("express");
-let app = Express();
+var Express = require("express");
+var app = Express();
 
-let http = require('http').Server(app);
-let io = require('socket.io')(http);
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
 
 app.use(Express.static('public'));
 
