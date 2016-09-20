@@ -1,6 +1,50 @@
-    (function () {
+"use strict";
+
+(function () {
+
+    class Player {
+        constructor(userId, x, y, color) {
+            this.userId = userId;
+
+            this.width = 10;
+            this.height = 10;
+            this.velocity = 5;
+
+            this.x = x;
+            this.y = y;
+
+            this.dx = 0;
+            this.dy = 0;
+
+            this.box = new PIXI.Graphics();
+
+            if (color) {
+                this.color = color;
+            } else {
+                this.color = 0x11ff22; // greenish
+                // TODO pick random color 
+            }
+        }
+
+        renderBox() {
+            this.box.beginFill(this.color);
+            this.box.drawRect(this.x, this.y, this.width, this.height);
+            this.box.endFill();
+
+            return this.box;
+        }
+
+        update() {
+            this.box.x = this.x;
+            this.box.y = this.y;
+        }
+    }
 
     var socket = io();
+    var userId = guid();
+    console.log("my userId is: " + userId);
+
+    var players = {};
 
     // Autodetect, create and append the renderer to the body element
     var renderer = PIXI.autoDetectRenderer(
@@ -11,30 +55,112 @@
     document.body.appendChild(renderer.view);
 
     // Create the main stage for your display objects
-    //var stage = new PIXI.Stage(0x66FF99);
     var stage = new PIXI.Container();
 
-    // Set the width and height of our boxes
-    var boxWidth = 10;
-    var boxHeight = 10;
+    let velocity = 5;
 
-    // Create the "player"
-    var playerBox = new PIXI.Graphics();
-    playerBox.beginFill(0x3498db); // Blue color
-    playerBox.drawRect(200, 200, boxWidth, boxHeight);
-    playerBox.endFill();
-    playerBox.vx = 0;
-    playerBox.vy = 0;
-    stage.addChild(playerBox);
+    function createSelfPlayer() {
+        // Set the width and height of our boxes
+        let boxWidth = 10;
+        let boxHeight = 10;
 
-    var velocity = 5;
+        // Create the "player"
+        let playerBox = new PIXI.Graphics();
+        playerBox.beginFill(0x3498db); // Blue color
 
-    // Create the target
-    var goalBox = new PIXI.Graphics();
-    goalBox.beginFill(0xe74c3c); // Red color
-    goalBox.drawRect(0, 0, boxWidth, boxHeight);
-    goalBox.endFill();
-    stage.addChild(goalBox);
+        let randomX = Math.floor((Math.random() * 100) + 0);
+        let randomY = Math.floor((Math.random() * 100) + 0);
+        console.log(randomX + " " + randomY);
+
+        // playerBox.drawRect(randomX, randomY, boxWidth, boxHeight);
+        playerBox.drawRect(0, 0, boxWidth, boxHeight);
+        playerBox.endFill();
+        playerBox.vx = 0;
+        playerBox.vy = 0;
+        stage.addChild(playerBox);
+
+        return playerBox;
+    }
+    let playerBox = createSelfPlayer();
+
+
+    function createOtherPlayer(update) {
+        let newPlayer = new Player(update.userId, update.x, update.y, update.color);
+        stage.addChild(newPlayer.renderBox());
+        return newPlayer;
+    }
+
+    let lastPosition = {}; // initialize to empty
+
+    socket.on("player location update", function (update) {
+        if (update.userId == userId) {
+            // this is us, ignore
+            return;
+        }
+
+        if (!players[update.userId]) {
+            // create the player on the fly
+            let newPlayer = createOtherPlayer(update);
+            players[newPlayer.userId] = newPlayer;
+            return;
+        }
+
+        console.log(update);
+
+        players[update.userId].x = update.x;
+        players[update.userId].y = update.y;
+    })
+
+    function broadcastUpdates() { // over the websocket
+        let playerPosition = {
+            userId: userId,
+            x: playerBox.x,
+            y: playerBox.y
+        }
+        if ((playerPosition.x != null && playerPosition.y != null)
+            && (lastPosition.x !== playerPosition.x || lastPosition.y !== playerPosition.y)) {
+            console.log(playerBox.x + " " + playerBox.y);
+
+            lastPosition = playerPosition;
+            socket.emit("player location update", playerPosition);
+        }
+    }
+
+    function animate() {
+        updatePlayerLocation();
+
+        // update all other players
+        for (let key in players) {
+            if (!players.hasOwnProperty(key)) {
+                //The current property is not a direct property of players
+                continue;
+            }
+            players[key].update();
+        }
+
+        renderer.render(stage);
+
+        broadcastUpdates();
+
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+
+    function updatePlayerLocation() {
+        playerBox.x += playerBox.vx;
+        playerBox.y += playerBox.vy;
+    }
+
+    function guid() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+            s4() + '-' + s4() + s4() + s4();
+    }
 
     // keyboard controls
     var left = keyboard(37);
@@ -47,7 +173,7 @@
     }
     left.release = function () {
         if (right.isDown) {
-            playerBox.vx = velocity; 
+            playerBox.vx = velocity;
         } else {
             playerBox.vx = 0;
         }
@@ -82,67 +208,7 @@
         if (up.isDown) {
             playerBox.vy = -velocity;
         } else {
-            playerBox.vy = 0; 
-        }
-    }
-
-    goalBoxSpawn();
-
-    socket.on("player location update", function(update) {
-        console.log(update);
-        playerBox.x = update.x;
-        playerBox.y = update.y;
-    })
-
-    let lastPosition = {}; // initialize to empty
-    function broadcastUpdates() { // over the websocket
-        let playerPosition = {
-            x: playerBox.x,
-            y: playerBox.y
-        }
-        if (lastPosition.x !== playerPosition.x || lastPosition.y !== playerPosition.y) {
-            lastPosition = playerPosition;
-            socket.emit("player location update", playerPosition);
-        }
-    }
-
-    function animate() {
-        updatePlayerLocation();
-
-        //Render the stage
-        renderer.render(stage);
-
-        broadcastUpdates();
-        
-        // Check if your player collides with the target
-        checkPosition();
-
-        requestAnimationFrame(animate);
-    }
-    animate();
-
-
-    function updatePlayerLocation() {
-        playerBox.x += playerBox.vx;
-        playerBox.y += playerBox.vy;
-    }
-
-    function goalBoxSpawn() {
-        // Spawns the target at a random position on our stage
-
-        // Create two random points on our stage
-        var randomX = Math.floor((Math.random() * 10) + 0);
-        var randomY = Math.floor((Math.random() * 10) + 0);
-
-        // Set the position of our target
-        goalBox.position.x = boxWidth * randomX;
-        goalBox.position.y = boxHeight * randomY;
-    }
-
-    function checkPosition() {
-        // If the player and target are at the same position, spawn the target in another position
-        if (goalBox.position.x === playerBox.position.x && goalBox.position.y === playerBox.position.y) {
-            goalBoxSpawn();
+            playerBox.vy = 0;
         }
     }
 
@@ -187,4 +253,3 @@
         return key;
     }
 })();
- 
