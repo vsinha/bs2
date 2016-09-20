@@ -1,32 +1,37 @@
 "use strict";
 
 var Express = require("express");
-var app = Express();
+var Http = require("http");
+var Socketio = require("socket.io");
 
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
+var app = new Express();
+var server = new Http.Server(app);
+var io = new Socketio(server);
 
 app.use(Express.static('public'));
 
 // let serverPlayers = {};
 
-io.on('connection', function(socket){
+io.on('connection', socket => {
   console.log('a user connected');
 
   // socket.on("player added", function(update) {
   //     io.emit("player added", update);
   // })
 
-  socket.on("player location update", function(update) {
-      io.emit("player location update", update);
+  socket.on("player location update", update => {
+    io.emit("player location update", update);
   });
 
-  socket.on('disconnect', function(update){
+  socket.on("player event update", event => {
+    console.log(event);
+  });
+
+  socket.on('disconnect', update => {
     console.log('user disconnected');
   });
-
 });
 
-http.listen(3000, function(){
+server.listen(3000, () => {
   console.log('listening on *:3000');
 });
