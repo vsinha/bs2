@@ -168,47 +168,136 @@
     var right = keyboard(39);
     var down = keyboard(40);
 
+
     left.press = function () {
-        playerBox.vx = -velocity;
+        if (right.isDown) {
+            playerBox.vx = 0;
+        } else if (down.isDown || up.isDown) {
+            playerBox.vx = -velocity * 0.70710678118;
+            if (down.isDown && up.isDown){
+                playerBox.vy = 0;
+            } else if (down.isDown) {
+                playerBox.vy = velocity * 0.70710678118;
+            } else if (up.isDown) { 
+                playerBox.vy = -velocity * 0.70710678118;
+            }
+        } else {
+            playerBox.vx = -velocity;
+        }
     }
+
     left.release = function () {
         if (right.isDown) {
             playerBox.vx = velocity;
         } else {
             playerBox.vx = 0;
         }
-    }
-
-    up.press = function () {
-        playerBox.vy = -velocity;
-    }
-    up.release = function () {
-        if (down.isDown) {
-            playerBox.vy = velocity;
-        } else {
+        
+        if (down.isDown && up.isDown) {
             playerBox.vy = 0;
+        } else if (down.isDown) {
+            playerBox.vy = velocity;
+        } else if (up.isDown) {
+            playerBox.vy = -velocity;
+        }
+    }
+  
+    right.press = function () {
+        if (left.isDown) {
+            playerBox.vx = 0;
+        } else if (down.isDown || up.isDown) {
+            playerBox.vx = velocity * 0.70710678118;
+            if (down.isDown && up.isDown){
+                playerBox.vy = 0;
+            } else if (down.isDown) {
+                playerBox.vy = velocity * 0.70710678118;
+            } else if (up.isDown) { 
+                playerBox.vy = -velocity * 0.70710678118;
+            }
+        } else {
+            playerBox.vx = velocity;
         }
     }
 
-    right.press = function () {
-        playerBox.vx = velocity;
-    }
     right.release = function () {
         if (left.isDown) {
-            playerBox.vx = -velocity;
+            playerBox.vx = -velocity; 
         } else {
             playerBox.vx = 0;
+        }
+        
+        if (down.isDown && up.isDown) {
+            playerBox.vy = 0;
+        } else if (down.isDown) {
+            playerBox.vy = velocity;
+        } else if (up.isDown) {
+            playerBox.vy = -velocity;
         }
     }
 
     down.press = function () {
-        playerBox.vy = velocity;
+        if (up.isDown) {
+            playerBox.vy = 0;
+        } else if (left.isDown || right.isDown) {
+            playerBox.vy = velocity * 0.70710678118;
+            if (left.isDown && right.isDown){
+                playerBox.vx = 0;
+            } else if (left.isDown) {
+                playerBox.vx = -velocity * 0.70710678118;
+            } else if (right.isDown) { 
+                playerBox.vx = velocity * 0.70710678118;
+            }
+        } else {
+            playerBox.vy = velocity;
+        }
     }
+
     down.release = function () {
         if (up.isDown) {
-            playerBox.vy = -velocity;
+            playerBox.vy = -velocity; 
         } else {
             playerBox.vy = 0;
+        }
+        
+        if (left.isDown && right.isDown) {
+            playerBox.vx = 0;
+        } else if (left.isDown) {
+            playerBox.vx = -velocity;
+        } else if (right.isDown) {
+            playerBox.vx = velocity;
+        }
+    }
+
+    up.press = function () {
+        if (down.isDown) {
+            playerBox.vy = 0;
+        } else if (left.isDown || right.isDown) {
+            playerBox.vy = -velocity * 0.70710678118;
+            if (left.isDown && right.isDown){
+                playerBox.vx = 0;
+            } else if (left.isDown) {
+                playerBox.vx = -velocity * 0.70710678118;
+            } else if (right.isDown) { 
+                playerBox.vx = velocity * 0.70710678118;
+            }
+        } else {
+            playerBox.vy = -velocity;
+        }
+    }
+    
+    up.release = function () {
+        if (down.isDown) {
+            playerBox.vy = velocity; 
+        } else {
+            playerBox.vy = 0;
+        }
+        
+        if (left.isDown && right.isDown) {
+            playerBox.vx = 0;
+        } else if (left.isDown) {
+            playerBox.vx = -velocity;
+        } else if (right.isDown) {
+            playerBox.vx = velocity;
         }
     }
 
