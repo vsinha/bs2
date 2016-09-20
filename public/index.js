@@ -1,55 +1,96 @@
 "use strict";
 
-(function () {
+function guid() {
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+    }
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+        s4() + '-' + s4() + s4() + s4();
+}
 
-    class Player {
-        constructor(userId, x, y, color) {
-            this.userId = userId;
+class Player {
+    constructor(userId, x, y, color, stage) {
+        this.userId = userId;
+        this.isSelfPlayer = false;
 
-            this.width = 10;
-            this.height = 10;
-            this.velocity = 5;
+        this.width = 10;
+        this.height = 10;
+        this.velocity = 5;
 
-            this.x = x;
-            this.y = y;
+        this.lastBroadcastedPosition = {};
 
-            this.dx = 0;
-            this.dy = 0;
+        this.x = x;
+        this.y = y;
 
-            this.box = new PIXI.Graphics();
+        this.dx = 0;
+        this.dy = 0;
 
-            if (color) {
-                this.color = color;
-            } else {
-                this.color = 0x11ff22; // greenish
-                // TODO pick random color 
-            }
+        this.box = new PIXI.Graphics();
+
+        if (color) {
+            this.color = color;
+        } else {
+            this.color = 0x11ff22; // greenish
+            // TODO pick random color 
         }
 
-        renderBox() {
-            this.box.beginFill(this.color);
-            this.box.drawRect(this.x, this.y, this.width, this.height);
-            this.box.endFill();
-
-            return this.box;
-        }
-
-        update() {
-            this.box.x = this.x;
-            this.box.y = this.y;
+        if (stage) {
+            stage.addChild(this.renderBox());
         }
     }
 
-    var socket = io();
-    var userId = guid();
-    console.log("my userId is: " + userId);
+    renderBox() {
+        this.box.beginFill(this.color);
+        this.box.drawRect(this.x, this.y, this.width, this.height);
+        this.box.endFill();
 
+        return this.box;
+    }
+
+    update() {
+        this.x += this.dx;
+        this.y += this.dy;
+
+        this.box.x = this.x;
+        this.box.y = this.y;
+    }
+}
+
+function broadcastUpdates(socket, selfPlayer) { // over the websocket
+        let playerPosition = {
+            userId: selfPlayer.userId,
+            x: selfPlayer.x,
+            y: selfPlayer.y
+        }
+        if ((playerPosition.x != null && playerPosition.y != null)
+            && (selfPlayer.lastBroadcastedPosition.x !== playerPosition.x 
+                || selfPlayer.lastBroadcastedPosition.y !== playerPosition.y)) {
+            console.log(selfPlayer.x + " " + selfPlayer.y);
+
+            selfPlayer.lastBroadcastedPosition = playerPosition;
+            socket.emit("player location update", playerPosition);
+        }
+    }
+
+
+(function () {
+
+    var socket = io();
+
+    var userId = guid();
     var players = {};
+    var stageHeight = 400;
+    var stageWidth = 720;
+    let velocity = 5;
+    
+    console.log("my userId is: " + userId);
 
     // Autodetect, create and append the renderer to the body element
     var renderer = PIXI.autoDetectRenderer(
-        720,
-        400,
+        stageWidth,
+        stageHeight,
         { backgroundColor: 0x000000, antialias: true }
     );
     document.body.appendChild(renderer.view);
@@ -57,43 +98,25 @@
     // Create the main stage for your display objects
     var stage = new PIXI.Container();
 
-    let velocity = 5;
+    function createSelfPlayer(userId) {
+        let randomX = Math.floor((Math.random() * stageWidth) + 0);
+        let randomY = Math.floor((Math.random() * stageHeight) + 0);
 
-    function createSelfPlayer() {
-        // Set the width and height of our boxes
-        let boxWidth = 10;
-        let boxHeight = 10;
-
-        // Create the "player"
-        let playerBox = new PIXI.Graphics();
-        playerBox.beginFill(0x3498db); // Blue color
-
-        let randomX = Math.floor((Math.random() * 100) + 0);
-        let randomY = Math.floor((Math.random() * 100) + 0);
-        console.log(randomX + " " + randomY);
-
-        // playerBox.drawRect(randomX, randomY, boxWidth, boxHeight);
-        playerBox.drawRect(0, 0, boxWidth, boxHeight);
-        playerBox.endFill();
-        playerBox.vx = 0;
-        playerBox.vy = 0;
-        stage.addChild(playerBox);
-
-        return playerBox;
+        // let selfPlayer = new Player(userId, randomX, randomY, 0x1122ff);
+        let selfPlayer = new Player(userId, 20, 20, 0x3498db, stage);
+        selfPlayer.isSelfPlayer = true; // in case we forget
+        
+        return selfPlayer;
     }
-    let playerBox = createSelfPlayer();
-
+    let selfPlayer = createSelfPlayer(userId);
 
     function createOtherPlayer(update) {
-        let newPlayer = new Player(update.userId, update.x, update.y, update.color);
-        stage.addChild(newPlayer.renderBox());
+        let newPlayer = new Player(update.userId, update.x, update.y, update.color, stage);
         return newPlayer;
     }
-
-    let lastPosition = {}; // initialize to empty
-
+    
     socket.on("player location update", function (update) {
-        if (update.userId == userId) {
+        if (update.userId == selfPlayer.userId) {
             // this is us, ignore
             return;
         }
@@ -102,7 +125,6 @@
             // create the player on the fly
             let newPlayer = createOtherPlayer(update);
             players[newPlayer.userId] = newPlayer;
-            return;
         }
 
         console.log(update);
@@ -111,23 +133,10 @@
         players[update.userId].y = update.y;
     })
 
-    function broadcastUpdates() { // over the websocket
-        let playerPosition = {
-            userId: userId,
-            x: playerBox.x,
-            y: playerBox.y
-        }
-        if ((playerPosition.x != null && playerPosition.y != null)
-            && (lastPosition.x !== playerPosition.x || lastPosition.y !== playerPosition.y)) {
-            console.log(playerBox.x + " " + playerBox.y);
-
-            lastPosition = playerPosition;
-            socket.emit("player location update", playerPosition);
-        }
-    }
-
+    
     function animate() {
-        updatePlayerLocation();
+
+        selfPlayer.update();
 
         // update all other players
         for (let key in players) {
@@ -138,158 +147,144 @@
             players[key].update();
         }
 
+        broadcastUpdates(socket, selfPlayer);
+
         renderer.render(stage);
-
-        broadcastUpdates();
-
         requestAnimationFrame(animate);
     }
     animate();
 
 
-    function updatePlayerLocation() {
-        playerBox.x += playerBox.vx;
-        playerBox.y += playerBox.vy;
-    }
-
-    function guid() {
-        function s4() {
-            return Math.floor((1 + Math.random()) * 0x10000)
-                .toString(16)
-                .substring(1);
-        }
-        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-            s4() + '-' + s4() + s4() + s4();
-    }
-
+    ////////////////////
     // keyboard controls
+    ////////////////////
+
     var left = keyboard(37);
     var up = keyboard(38);
     var right = keyboard(39);
     var down = keyboard(40);
 
-
     left.press = function () {
         if (down.isDown || up.isDown) {
-            playerBox.vx = -velocity * 0.70710678118;
-            if (down.isDown && up.isDown){
-                playerBox.vy = 0;
+            selfPlayer.dx = -velocity * 0.70710678118;         
+            if (down.isDown && up.isDown) {
+                selfPlayer.dy = 0;
             } else if (down.isDown) {
-                playerBox.vy = velocity * 0.70710678118;
-            } else if (up.isDown) { 
-                playerBox.vy = -velocity * 0.70710678118;
+                selfPlayer.dy = velocity * 0.70710678118;
+            } else if (up.isDown) {
+                selfPlayer.dy = -velocity * 0.70710678118;
             }
         } else {
-            playerBox.vx = -velocity;
+            selfPlayer.dx = -velocity;                         
         }
     }
 
     left.release = function () {
         if (right.isDown) {
-            playerBox.vx = velocity;
+            selfPlayer.dx = velocity;
         } else {
-            playerBox.vx = 0;
+            selfPlayer.dx = 0;
         }
-        
+
         if (down.isDown && up.isDown) {
-            playerBox.vy = 0;
+            selfPlayer.dy = 0;
         } else if (down.isDown) {
-            playerBox.vy = velocity;
+            selfPlayer.dy = velocity;
         } else if (up.isDown) {
-            playerBox.vy = -velocity;
+            selfPlayer.dy = -velocity;
         }
     }
-  
+
     right.press = function () {
         if (down.isDown || up.isDown) {
-            playerBox.vx = velocity * 0.70710678118;
-            if (down.isDown && up.isDown){
-                playerBox.vy = 0;
+            selfPlayer.dx = velocity * 0.70710678118;
+            if (down.isDown && up.isDown) {
+                selfPlayer.dy = 0;
             } else if (down.isDown) {
-                playerBox.vy = velocity * 0.70710678118;
-            } else if (up.isDown) { 
-                playerBox.vy = -velocity * 0.70710678118;
+                selfPlayer.dy = velocity * 0.70710678118;
+            } else if (up.isDown) {
+                selfPlayer.dy = -velocity * 0.70710678118;
             }
         } else {
-            playerBox.vx = velocity;
+            selfPlayer.dx = velocity;
         }
     }
 
     right.release = function () {
         if (left.isDown) {
-            playerBox.vx = -velocity; 
+            selfPlayer.dx = -velocity;
         } else {
-            playerBox.vx = 0;
+            selfPlayer.dx = 0;
         }
-        
+
         if (down.isDown && up.isDown) {
-            playerBox.vy = 0;
+            selfPlayer.dy = 0;
         } else if (down.isDown) {
-            playerBox.vy = velocity;
+            selfPlayer.dy = velocity;
         } else if (up.isDown) {
-            playerBox.vy = -velocity;
+            selfPlayer.dy = -velocity;
         }
     }
 
-    down.press = function () { 
+    down.press = function () {
         if (left.isDown || right.isDown) {
-            playerBox.vy = velocity * 0.70710678118;
-            if (left.isDown && right.isDown){
-                playerBox.vx = 0;
+            selfPlayer.dy = velocity * 0.70710678118;
+            if (left.isDown && right.isDown) {
+                selfPlayer.dx = 0;
             } else if (left.isDown) {
-                playerBox.vx = -velocity * 0.70710678118;
-            } else if (right.isDown) { 
-                playerBox.vx = velocity * 0.70710678118;
+                selfPlayer.dx = -velocity * 0.70710678118;
+            } else if (right.isDown) {
+                selfPlayer.dx = velocity * 0.70710678118;
             }
         } else {
-            playerBox.vy = velocity;
+            selfPlayer.dy = velocity;
         }
     }
 
     down.release = function () {
         if (up.isDown) {
-            playerBox.vy = -velocity; 
+            selfPlayer.dy = -velocity;
         } else {
-            playerBox.vy = 0;
+            selfPlayer.dy = 0;
         }
-        
+
         if (left.isDown && right.isDown) {
-            playerBox.vx = 0;
+            selfPlayer.dx = 0;
         } else if (left.isDown) {
-            playerBox.vx = -velocity;
+            selfPlayer.dx = -velocity;
         } else if (right.isDown) {
-            playerBox.vx = velocity;
+            selfPlayer.dx = velocity;
         }
     }
 
     up.press = function () {
         if (left.isDown || right.isDown) {
-            playerBox.vy = -velocity * 0.70710678118;
-            if (left.isDown && right.isDown){
-                playerBox.vx = 0;
+            selfPlayer.dy = -velocity * 0.70710678118;
+            if (left.isDown && right.isDown) {
+                selfPlayer.dx = 0;
             } else if (left.isDown) {
-                playerBox.vx = -velocity * 0.70710678118;
-            } else if (right.isDown) { 
-                playerBox.vx = velocity * 0.70710678118;
+                selfPlayer.dx = -velocity * 0.70710678118;
+            } else if (right.isDown) {
+                selfPlayer.dx = velocity * 0.70710678118;
             }
         } else {
-            playerBox.vy = -velocity;
+            selfPlayer.dy = -velocity;
         }
     }
-    
+
     up.release = function () {
         if (down.isDown) {
-            playerBox.vy = velocity; 
+            selfPlayer.dy = velocity;
         } else {
-            playerBox.vy = 0;
+            selfPlayer.dy = 0;
         }
-        
+
         if (left.isDown && right.isDown) {
-            playerBox.vx = 0;
+            selfPlayer.dx = 0;
         } else if (left.isDown) {
-            playerBox.vx = -velocity;
+            selfPlayer.dx = -velocity;
         } else if (right.isDown) {
-            playerBox.vx = velocity;
+            selfPlayer.dx = velocity;
         }
     }
 
