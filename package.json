@@ -1,5 +1,5 @@
 {
-  "name": "blockships_clone",
+  "name": "bs2",
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
@@ -11,5 +11,9 @@
   "dependencies": {
     "express": "^4.14.0",
     "socket.io": "^1.4.8"
+  },
+  "repository": { 
+    "type" : "git", 
+    "url" : "https://github.com/vsinha/bs2"
   }
 }
