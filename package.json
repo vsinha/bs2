@@ -13,10 +13,15 @@
     "socket.io": "^1.4.8",
     "jsonfile": "~2.4.0",
     "mathjs": "~3.5.2",
-    "nanotimer": "~0.3.14"
+    "nanotimer": "~0.3.14",
+    "jsondiffpatch": "^0.2.4",
+    "socket.io": "^1.4.8"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/vsinha/bs2"
+  },
+  "devDependencies": {
+    "eslint-config-google": "^0.6.0"
   }
 }

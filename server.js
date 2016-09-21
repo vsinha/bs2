@@ -5,7 +5,6 @@ var app = Express();
 app.use(Express.static('public'));
 
 
-
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var math = require('mathjs');
@@ -19,11 +18,7 @@ timer.setInterval(incrementTick, '', '100m'); //10 ticks per second
 
 function incrementTick(){
     tick++;
-    console.log(tick);
 }
-
-
-
 
 
 function guid() {
@@ -37,7 +32,7 @@ function guid() {
 }
 
 
-io.on('connection', function(socket){
+io.on('connection', function(socket) {
   console.log('a user connected');
 
 
@@ -61,6 +56,7 @@ io.on('connection', function(socket){
 
 
 
+
   socket.on("player location update", function(update) {
     console.log(update);
     //check that actions are legal then modify game board 
@@ -78,13 +74,16 @@ io.on('connection', function(socket){
       io.emit("player location update", update);
   });
 
-  socket.on('disconnect', function(update){
-    console.log('user disconnected');
+  socket.on("player event update", function(event) {
+    console.log(event);
   });
 
+  socket.on('disconnect',function(update) {
+    console.log('user disconnected');
+  });
 });
 
-http.listen(3000, function(){
+http.listen(3000, function() {
   console.log('listening on *:3000');
 });
 
