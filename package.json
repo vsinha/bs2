@@ -10,11 +10,11 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.14.0",
-    "socket.io": "^1.4.8",
+    "jsondiffpatch": "^0.2.4",
     "jsonfile": "~2.4.0",
+    "lodash": "^4.16.1",
     "mathjs": "~3.5.2",
     "nanotimer": "~0.3.14",
-    "jsondiffpatch": "^0.2.4",
     "socket.io": "^1.4.8"
   },
   "repository": {

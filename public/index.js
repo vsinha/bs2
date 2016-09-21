@@ -88,7 +88,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
 
 
 (function () {
-    let socket = io();
+    let socket = io({'sync disconnect on unload': true });
 
     var userId = guid();
     var players = {};
