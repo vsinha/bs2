@@ -1,0 +1,34 @@
+{
+    "players": {
+        "6a79e486-273f-8913-2893-b5af707d3c87": {
+            "userId": "6a79e486-273f-8913-2893-b5af707d3c87",
+            "x": 0,
+            "y": 0,
+            "dx": 0,
+            "dy": 0,
+            "color": 19666925.64158331,
+            "pressing": {
+                "left": true,
+                "up"  : false,
+                "right": false,
+                "down": false
+            },
+            "socketId": "/#U4gCTFkCMaiMJcS4AAAA"
+        },
+        "f6805816-8c4e-35b6-5323-32c43c712edd": {
+            "userId": "f6805816-8c4e-35b6-5323-32c43c712edd",
+            "x": 0,
+            "y": 0,
+            "dx": 0,
+            "dy": 0,
+            "color": 30252467.261109572,
+            "pressing": {
+                "left": false,
+                "up"  : false,
+                "right": false,
+                "down": false
+            },
+            "socketId": "/#ASKKoIzj5RsEmP0YAAAB"
+        }
+    }
+}
