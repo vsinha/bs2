@@ -67,7 +67,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
         renderer: renderer,
         root: stage,
         fps: 30,
-        update: updatePlayer.bind(this)
+        update: animate.bind(this)
     });
     smoothie.start();
 
@@ -99,7 +99,6 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
             let box = blocks[player.userId].box;
             box.x = player.x;
             box.y = player.y;
-
         } else {
             // create a new player object 
             let box = createPlayerBox(player);
@@ -113,23 +112,13 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     }
 
     function animate() {
-        // selfPlayer.update();
-
-        // DELETE ALL OBJECTS FROM STAGE
-        // TODO this is really bad as we're reallocating the PIXI graphics squares
-        // every turn. we'd really like the client to keep track of existing players
-        // to the best of its ability, and move the squares around rather than reallocating
-        // for (var i = stage.children.length - 1; i >= 0; i--) {	
-        //     stage.removeChild(stage.children[i]);
-        // }
+        requestAnimationFrame(animate);
 
         for (let playerId in gameState.players) {
             updatePlayer(gameState.players[playerId]);
-            // drawPlayer(gameState.players[playerId]);
         }
 
         renderer.render(stage);
-        requestAnimationFrame(animate);
     }
     animate();
 
