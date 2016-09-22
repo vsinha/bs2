@@ -16,55 +16,6 @@ function guid() {
         s4() + '-' + s4() + s4() + s4();
 }
 
-//this should move to a game board class file
-// class Player {
-//     constructor(userId, x, y, color, stage) {
-//         this.userId = userId;
-//         this.isSelfPlayer = false;
-
-//         this.width = 10;
-//         this.height = 10;
-//         this.velocity = 5;
-
-//         this.lastBroadcastedPosition = {};
-
-//         this.x = x;
-//         this.y = y;
-
-//         this.dx = 0;
-//         this.dy = 0;
-
-//         this.box = new PIXI.Graphics();
-
-//         if (color) {
-//             this.color = color;
-//         } else {
-//             this.color = 0x11ff22; // greenish
-//             // TODO pick random color
-//         }
-
-//         if (stage) {
-//             stage.addChild(this.renderBox());
-//         }
-//     }
-
-//     renderBox() {
-//         this.box.beginFill(this.color);
-//         this.box.drawRect(this.x, this.y, this.width, this.height);
-//         this.box.endFill();
-
-//         return this.box;
-//     }
-
-//     update() {
-//         this.x += this.dx;
-//         this.y += this.dy;
-
-//         this.box.x = this.x;
-//         this.box.y = this.y;
-//     }
-// }
-
 /**
  * Send all updates about player location over the socket
  * @param {Object} socket: A socket.io open socket
@@ -111,30 +62,13 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     // Create the main stage for your display objects
     var stage = new PIXI.Container();
 
-    // function createSelfPlayer(userId) {
-    //     // let randomX = Math.floor((Math.random() * stageWidth) + 0);
-    //     // let randomY = Math.floor((Math.random() * stageHeight) + 0);
-    //     // let selfPlayer = new Player(userId, randomX, randomY, 0x1122ff);
-
-    //     let selfPlayer = new Player(userId, 20, 20, 0x3498db, stage);
-    //     selfPlayer.isSelfPlayer = true; // in case we forget
-
-    //     return selfPlayer;
-    // }
-    // let selfPlayer = createSelfPlayer(userId);
-
-    // function createOtherPlayer(update) {
-    //     let newPlayer = new Player(update.userId, update.x, update.y, update.color, stage);
-    //     return newPlayer;
-    // }
-
     socket.on("connect", function () {
         socket.emit("player joined", {
             userId: userId
         });
     });
 
-    function drawPlayer(player) {
+    function createPlayerBox(player) {
         // console.log(player);
         
         let box = new PIXI.Graphics();
@@ -142,7 +76,31 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
         box.drawRect(player.x, player.y, 10, 10);
         box.endFill();
 
-        stage.addChild(box);
+        return box;
+    }
+
+    // dictionary of all blocks by guid, this way we can keep track of blocks we've seen before rather than clearing them from the screen
+    let blocks = {}
+
+    function updatePlayer(player) {
+        if (blocks[player.userId]) {
+            // update the existing player object
+            blocks[player.userId].lastUpdated = Date.now();
+
+            let box = blocks[player.userId].box;
+            box.x = player.x;
+            box.y = player.y;
+            
+        } else {
+            // create a new player object 
+            let box = createPlayerBox(player);
+            blocks[player.userId] = {
+                box: box,
+                lastUpdated: Date.now()
+            }
+
+            stage.addChild(box);
+        }
     }
 
     function animate() {
@@ -152,24 +110,14 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
         // TODO this is really bad as we're reallocating the PIXI graphics squares
         // every turn. we'd really like the client to keep track of existing players
         // to the best of its ability, and move the squares around rather than reallocating
-        for (var i = stage.children.length - 1; i >= 0; i--) {	
-            stage.removeChild(stage.children[i]);
-        }
-
-        for (let playerId in gameState.players) {
-            drawPlayer(gameState.players[playerId]);
-        }
-
-        // // update all other players
-        // for (let key in players) {
-        //   if (!players.hasOwnProperty(key)) {
-        //     // The current property is not a direct property of players
-        //     continue;
-        //   }
-        //   players[key].update();
+        // for (var i = stage.children.length - 1; i >= 0; i--) {	
+        //     stage.removeChild(stage.children[i]);
         // }
 
-        // broadcastUpdates(socket, selfPlayer);
+        for (let playerId in gameState.players) {
+            updatePlayer(gameState.players[playerId]);
+            // drawPlayer(gameState.players[playerId]);
+        }
 
         renderer.render(stage);
         requestAnimationFrame(animate);
