@@ -39,7 +39,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
 
 
 (function () {
-    let socket = io({'sync disconnect on unload': true });
+    let socket = io({ 'sync disconnect on unload': true });
 
     var userId = guid();
     var players = {};
@@ -62,6 +62,15 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     // Create the main stage for your display objects
     var stage = new PIXI.Container();
 
+    let smoothie = new Smoothie({
+        engine: PIXI,
+        renderer: renderer,
+        root: stage,
+        fps: 30,
+        update: updatePlayer.bind(this)
+    });
+    smoothie.start();
+
     socket.on("connect", function () {
         socket.emit("player joined", {
             userId: userId
@@ -70,7 +79,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
 
     function createPlayerBox(player) {
         // console.log(player);
-        
+
         let box = new PIXI.Graphics();
         box.beginFill(player.color);
         box.drawRect(player.x, player.y, 10, 10);
@@ -90,7 +99,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
             let box = blocks[player.userId].box;
             box.x = player.x;
             box.y = player.y;
-            
+
         } else {
             // create a new player object 
             let box = createPlayerBox(player);
