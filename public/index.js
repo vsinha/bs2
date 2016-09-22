@@ -21,21 +21,21 @@ function guid() {
  * @param {Object} socket: A socket.io open socket
  * @param {Player} selfPlayer: The local player at this client
  */
-function broadcastUpdates(socket, selfPlayer) { // over the websocket
-    let playerPosition = {
-        userId: selfPlayer.userId,
-        x: selfPlayer.x,
-        y: selfPlayer.y
-    };
-    if ((playerPosition.x !== null && playerPosition.y !== null) &&
-        (selfPlayer.lastBroadcastedPosition.x !== playerPosition.x ||
-            selfPlayer.lastBroadcastedPosition.y !== playerPosition.y)) {
-        console.log(selfPlayer.x + " " + selfPlayer.y);
+// function broadcastUpdates(socket, selfPlayer) { // over the websocket
+//     let playerPosition = {
+//         userId: selfPlayer.userId,
+//         x: selfPlayer.x,
+//         y: selfPlayer.y
+//     };
+//     if ((playerPosition.x !== null && playerPosition.y !== null) &&
+//         (selfPlayer.lastBroadcastedPosition.x !== playerPosition.x ||
+//             selfPlayer.lastBroadcastedPosition.y !== playerPosition.y)) {
+//         console.log(selfPlayer.x + " " + selfPlayer.y);
 
-        selfPlayer.lastBroadcastedPosition = playerPosition;
-        socket.emit("player location update", playerPosition);
-    }
-}
+//         selfPlayer.lastBroadcastedPosition = playerPosition;
+//         socket.emit("player location update", playerPosition);
+//     }
+// }
 
 
 (function () {
@@ -55,7 +55,9 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     var renderer = PIXI.autoDetectRenderer(
         stageWidth,
         stageHeight,
-        { backgroundColor: 0x000000, antialias: true }
+        { 
+            backgroundColor: 0x000000, antialias: true 
+        }
     );
     document.body.appendChild(renderer.view);
 
@@ -66,7 +68,7 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
         engine: PIXI,
         renderer: renderer,
         root: stage,
-        fps: 30,
+        fps: 60,
         update: animate.bind(this)
     });
     smoothie.start();
@@ -95,10 +97,18 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
         if (blocks[player.userId]) {
             // update the existing player object
             blocks[player.userId].lastUpdated = Date.now();
-
+            
             let box = blocks[player.userId].box;
+
+            if (box.x === player.x && box.y === player.y) {
+                return; // no update needed
+            }
+
+            console.log(box.x + " " + player.x);
+
             box.x = player.x;
             box.y = player.y;
+            
         } else {
             // create a new player object 
             let box = createPlayerBox(player);
@@ -112,15 +122,13 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
     }
 
     function animate() {
-        requestAnimationFrame(animate);
-
         for (let playerId in gameState.players) {
             updatePlayer(gameState.players[playerId]);
         }
 
         renderer.render(stage);
+        // requestAnimationFrame(animate);
     }
-    animate();
 
     function emitEvent(event) {
         socket.emit("player event update", event);
@@ -128,8 +136,8 @@ function broadcastUpdates(socket, selfPlayer) { // over the websocket
 
     socket.on("game state update", (state) => {
         gameState = state;
-        console.log("received game state");
-        console.log(JSON.stringify(gameState, null, 2));
+        // console.log("received game state");
+        // console.log(JSON.stringify(gameState, null, 2));
     });
 
     // //////////////////
