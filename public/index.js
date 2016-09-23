@@ -79,14 +79,23 @@ function guid() {
         });
     });
 
-    function createPlayerBox(player) {
-        // console.log(player);
+    socket.on("player disconnected", function (userId) {
+            
+            let box = blocks[userId].box;
+            if (box){
+                stage.removeChild(box);
+                delete gameState.players[userId];    
+            }
+    });
 
+
+
+
+    function createPlayerBox(player) {
         let box = new PIXI.Graphics();
         box.beginFill(player.color);
-        box.drawRect(player.x, player.y, 10, 10);
+        box.drawRect(0, 0, 10, 10);
         box.endFill();
-
         return box;
     }
 
@@ -95,27 +104,26 @@ function guid() {
 
     function updatePlayer(player) {
         if (blocks[player.userId]) {
-            // update the existing player object
             blocks[player.userId].lastUpdated = Date.now();
-            
             let box = blocks[player.userId].box;
-
             if (box.x === player.x && box.y === player.y) {
                 return; // no update needed
             }
-
-            console.log(box.x + " " + player.x);
 
             box.x = player.x;
             box.y = player.y;
             
         } else {
+            console.log("playerId: " + player.userId);
+            console.log("player not found");
             // create a new player object 
             let box = createPlayerBox(player);
             blocks[player.userId] = {
                 box: box,
                 lastUpdated: Date.now()
             }
+            console.log("new player created at:")
+            console.log(player.x + "," + player.y);
 
             stage.addChild(box);
         }
@@ -127,7 +135,6 @@ function guid() {
         }
 
         renderer.render(stage);
-        // requestAnimationFrame(animate);
     }
 
     function emitEvent(event) {
